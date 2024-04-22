@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\SignalR-ServerClient.props" />
+</Project>

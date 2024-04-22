@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "BL2Z00I4I7u7mfMafvXx84hQwkQJrzQHYeyQohGMLLI=",
+  "Source": "SignalR-ServerClient",
+  "BasePath": "_content/SignalR-ServerClient",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

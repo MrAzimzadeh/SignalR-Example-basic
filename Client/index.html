@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="signalr.min.js"></script>
+    <script src="jquery.min.js"></script>
+
+    <script>
+        $(document).ready(() => {
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("https://localhost:7202/messagehub", { transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling })
+                // *  Baglanti olanda  kere tetiklenir
+                // .withAutomaticReconnect() // 0 -  2 -  10 - 30  // !  4 defe outo connect olur  
+                .withAutomaticReconnect([1000, 2000, 3000, 4000]) //  cuustom 
+                .build();
+
+            // connection.start();
+            start()
+            function animation() {
+                durum.fadeIn(2000, () => {
+                    setTimeout(() => {
+                        durum.fadeOut(2000);
+                    }, 2000)
+                }); //
+            }
+
+
+            const durum = $("#durum");
+
+            connection.onreconnecting(error => {
+                // console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
+                console.log("Connection lost due to error. Reconnecting.");
+                durum.css("background-color", "blue");
+                // durum.css("display", "block");
+                durum.css("color", "white");
+                durum.html("connection  start  ... ");
+                animation();
+
+            });
+
+            connection.onreconnected(connectionId => {
+                // console.assert(connection.state === signalR.HubConnectionState.Connected);
+                console.log("Connection reestablished. Connected with connectionId: " + connectionId);
+                durum.css("background-color", "green");
+                // durum.css("display", "block");
+                durum.css("color", "white");
+                durum.html("connection!! ");
+                animation();
+
+            });
+            connection.onclose(connectionId => {
+                console.log("Connection reestablished. Connected with connectionId: " + connectionId);
+                durum.css("background-color", "red");
+                // durum.css("display", "block");
+                durum.css("color", "white");
+                durum.html("connection faild!! ");
+                animation();
+
+            });
+
+            connection.on("userJoined", connectionId => { // Fixed typo here
+                durum.html(`${connectionId} baglandi `);
+                console.log(message);
+                durum.css("background-color", "gree");
+                // durum.css("display", "block");
+                durum.css("color", "white");
+                durum.html("connection faild!! ");
+                animation();
+
+            });
+
+
+            connection.on("userLeaved", connectionId => { // Fixed typo here
+                $("div").append(`<p>${message}</p>`);
+                console.log(message);
+                durum.css("background-color", "red");
+                // durum.css("display", "block");
+                durum.css("color", "white");
+                durum.html("connection faild!! ");
+                animation();
+
+            });
+
+            connection.on("clients", clientsData => {
+                // debugger;
+                let text = "";
+                $.forEach(clientsData, (index, item) => {
+                    $("#clients").append(`<li>${item}</li>`);
+                });
+                $("#clients").html(text);
+            })
+            connection.on("receiveMessage", message => { // Fixed typo here
+                $("div").append(`<p>${message}</p>`);
+                console.log(message);
+            });
+
+            $("#btnGonder").click((e) => {
+                let message = $("#txtMessage").val();
+
+                let connectionIds = $("#connectionIds").val().split(",");
+                let groups = $("#txtGroups").val().split(",");
+                // connection.invoke("SendMessageAsync", message, connectionIds).catch(error => console.log(`Message send error: ${error}`));
+                // connection.invoke("SendMessageAsync", message, $("input[name=grup]:checked").val(), connectionIds).catch(error => console.log(`Message send error: ${error}`));
+                connection.invoke("SendMessageAsync", message, groups[0]).catch(error => console.log(`Message send error: ${error}`));
+
+            });
+
+            // Baglanti olmayanda dayanamadan isleyecek funksiya 
+            async function start() {
+                try {
+                    await connection.start();
+                    console.log("SignalR Connected.");
+                } catch (err) {
+                    console.log(err);
+                    setTimeout(() => start(), 1000);
+                }
+            }
+
+            connection.on("getConnectionId", connectionId => {
+                debugger;
+                $("#connectionId").html(connectionId);
+            });
+
+            let _connectionId = "";
+
+            connection.on("getConnectionId", connectionId => {
+                _connectionId = connectionId
+                $("connectionId").html(`Connectio id: ${connectionId}`)
+            });
+
+            $("#btnGrubaGir").click(() => {
+                debugger;
+                let groupName = $("input[name=grup]:checked").val();
+
+                connection.invoke("addGroup", _connectionId, groupName).catch(error => console.log(`Group join error: ${error}`));
+            });
+
+        })
+    </script>
+</head>
+
+<body>
+
+    <div style="background-color: black; color: white;" id="connectionId"></div>
+    <hr>
+    <input type="radio" name="grup" value="A"> A
+    <input type="radio" name="grup" value="b"> B
+    <input type="radio" name="grup" value="C"> C
+    <button id="btnGrubaGir">Gruba Gir </button>
+    <br>
+    <div id="durum" style="display: none;"></div>
+    <h1>SignalR Test</h1>
+    <hr />
+
+    <h2>Send Message to Server</h2>
+    <input type="text" id="txtMessage" />
+    <input type="text" id="txtGroups" placeholder="Group names (separated by comma)" />
+    <textarea id="connectionIds"></textarea>
+    <button id="btnGonder">Send Message to Server</button>
+
+    <div id="mesajlar"></div>
+
+    <div>
+        <ul id="clients"></ul>
+    </div>
+
+</body>
+
+</html>
